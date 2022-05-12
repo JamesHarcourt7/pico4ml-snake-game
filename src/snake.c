@@ -7,7 +7,6 @@
 #define Y_PIN 26
 #define X_PIN 27
 
-
 struct Vec {
     uint16_t x;
     uint16_t y;
@@ -18,12 +17,16 @@ const uint16_t width = 6;
 const uint16_t tile_h = (ST7735_HEIGHT-1) / height;
 const uint16_t tile_w = (ST7735_WIDTH-1) / width;
 
+int fruitx;
+int fruity;
+bool fruit = false;
+
+int counter = 1;
+
 int main() {
     stdio_init_all();  // Initialise serial in/output
     setvbuf ( stdout , NULL , _IONBF , 0 );  // Disable line and block buffering on stdout (for serial comm.)
     sleep_ms(1000);
-
-    printf("Hello World!");
 
     adc_init();
 
@@ -40,7 +43,6 @@ int main() {
     pos.y = 0;
 
     while (true) {
-        printf("aa");
         // Read y
         adc_select_input(0);
         direction.y = adc_read();
@@ -60,6 +62,11 @@ int main() {
             pos.x -= 1;
         }
 
+        if (fruitx == pos.x && fruity == pos.y) {
+            fruit = false;
+            counter ++;
+        }
+
         // Do drawing
         ST7735_FillScreen(ST7735_BLACK);
 
@@ -71,9 +78,24 @@ int main() {
             }
         }
 
+        // Draw fruit
+        if (!fruit) {
+            getFruit();
+        } else {
+            ST7735_FillRectangle((fruitx * tile_w) + 1, (fruity * tile_h) + 1, tile_w - 1, tile_h - 1, ST7735_RED);
+        }
+
         // Draw snake
         ST7735_FillRectangle((pos.x * tile_w) + 1, (pos.y * tile_h) + 1, tile_w - 1, tile_h - 1, ST7735_GREEN);
 
+
         sleep_ms(500);
     }
+}
+
+int getFruit() {
+    fruitx = rand() % width;
+    fruity = rand() % height;
+
+    fruit = true;
 }
