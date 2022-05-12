@@ -8,12 +8,12 @@
 #define X_PIN 27
 
 struct Vec {
-    uint16_t x;
-    uint16_t y;
+    int16_t x;
+    int16_t y;
 };
 
-const uint16_t height = 15;
-const uint16_t width = 6;
+const int16_t height = 15;
+const int16_t width = 6;
 const uint16_t tile_h = (ST7735_HEIGHT-1) / height;
 const uint16_t tile_w = (ST7735_WIDTH-1) / width;
 
@@ -22,6 +22,23 @@ int fruity;
 bool fruit = false;
 
 int counter = 1;
+
+void getFruit() {
+    fruitx = rand() % width;
+    fruity = rand() % height;
+
+    fruit = true;
+}
+
+void gameOver(int16_t *x, int16_t *y) {
+    *x = width / 2;
+    *y = height / 2;
+
+    fruit = false;
+
+    ST7735_FillScreen(ST7735_RED);
+    sleep_ms(500);
+}
 
 int main() {
     stdio_init_all();  // Initialise serial in/output
@@ -39,30 +56,42 @@ int main() {
     direction.x = 1;
     direction.y = 0;
     struct Vec pos;
-    pos.x = 0;
-    pos.y = 0;
+    pos.x = width / 2;
+    pos.y = height / 2;
 
     while (true) {
         // Read y
         adc_select_input(0);
-        direction.y = adc_read();
+        uint16_t dy = adc_read();
 
         // Read x
         adc_select_input(1);
-        direction.x = adc_read();
+        uint16_t dx = adc_read();
 
-        char arrayH[5];
-        if (direction.y > 2000) {
-            pos.y += 1;
-        } else if (direction.y < 500) {
-            pos.y -= 1;
-        } else if (direction.x > 2500) {
-            pos.x += 1;
-        } else if (direction.x < 500) {
-            pos.x -= 1;
+        if (dy > 2000) {
+            direction.y = 1;
+            direction.x = 0;
+        } else if (dy < 500) {
+            direction.y = -1;
+            direction.x = 0;
+        } else if (dx > 2500) {
+            direction.x = 1;
+            direction.y = 0;
+        } else if (dx < 500) {
+            direction.x = -1;
+            direction.y = 0;
         }
 
-        if (fruitx == pos.x && fruity == pos.y) {
+        pos.x += direction.x;
+        pos.y += direction.y;
+
+        // Handle out of bounds
+        if (pos.x == width || pos.x == -1 || pos.y == height || pos.y == -1) {
+            gameOver(&pos.x, &pos.y);
+        }
+
+        // Handle fruit collection
+        if (fruit && fruitx == pos.x && fruity == pos.y) {
             fruit = false;
             counter ++;
         }
@@ -91,11 +120,4 @@ int main() {
 
         sleep_ms(500);
     }
-}
-
-int getFruit() {
-    fruitx = rand() % width;
-    fruity = rand() % height;
-
-    fruit = true;
 }
